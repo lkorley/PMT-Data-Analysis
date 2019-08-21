@@ -102,7 +102,7 @@ if Analysis_Type == "Afterpulsing":
     Ttree = inFile.Get("event")
     After_Pulse = r.TH2F("Time vs Charge", "Time to Charge for KA0181",1000,0,14,1000,0,1800)
     Ratio = r.TH1F("Absolute AP Ratio", "Afterpulse Ratio", 500,0,1800)
-    Scale = 0
+    Scale = 0.0
     for entryNum in range (0 , Ttree.GetEntries()):
         Ttree.GetEntry(entryNum)
         WCharge = getattr(Ttree,"fWindowCharge_pC")
@@ -111,28 +111,32 @@ if Analysis_Type == "Afterpulsing":
         Npul = getattr(Ttree,"nPulses")
         Time.SetSize(Npul)
         Pulse.SetSize(Npul)
-        for ipul in range(0,Npul-1):
-            if WCharge > float(0.4):
-                Scale +=1
-                weight = 1/WCharge
-                Ratio.Fill(Time[ipul],weight)
-                After_Pulse.Fill(WCharge,Time[ipul],Pulse[ipul])
+        if WCharge > float(0.4):
+            Scale +=1.0
+            WCbyPE = WCharge / 1.6
+            weight = 1.0/WCbyPE
+            for ipul in range(0,Npul-1):
+                if Pulse > float(0.4):
+                    Ratio.Fill(Time[ipul],weight)
+                    After_Pulse.Fill(WCharge,Time[ipul],Pulse[ipul])
 
     Ratio.Scale(1/Scale)
-    fitFunc = r.TF1('fitFunc','gaus',400,800)
-    fitFunc2 = r.TF1('fitFunc2','gaus',825,1350)
-    fitFunc3 = r.TF1('fitFunc3','gaus',1375,1800)
+    fitFunc = r.TF1('fitFunc','gausn',400,800)
+    fitFunc2 = r.TF1('fitFunc2','gausn',825,1350)
+    fitFunc3 = r.TF1('fitFunc3','gausn',1375,1800)
+    fitFuncAll = r.TF1('fitFuncAll','gausn(0)+gausn(3)+gausn(6)',400,1800)
     After_Pulse.SetXTitle("Window Charge_pC")
     After_Pulse.SetYTitle("Time_ns")
     Ratio.SetXTitle("Time_ns")
     r.gStyle.SetOptFit()
-    Ratio.Fit('fitFunc','R')
-    Ratio.Fit('fitFunc2','R+')
-    Ratio.Fit('fitFunc3','R+')
-    print "Integral of first peak = ", fitFunc.Integral(400,800)
-    print "Integral of second peak = ", fitFunc2.Integral(825,1350)
-    print "Integral of third peak = ", fitFunc3.Integral(1375,1800)
-
+    #Ratio.Fit('fitFunc','R')
+    #Ratio.Fit('fitFunc2','R+')
+    #Ratio.Fit('fitFunc3','R+')
+    Ratio.Fit('fitFuncAll','R')
+    #print "Integral of first peak = ", fitFunc.Integral(400,800)
+    #print "Integral of second peak = ", fitFunc2.Integral(825,1350)
+    #print "Integral of third peak = ", fitFunc3.Integral(1375,1800)
+    print "Integral of All =",fitFuncAll.Integral(400,1800)
 
     After_Pulse.SetDirectory(0)
     Ratio.SetDirectory(0)
